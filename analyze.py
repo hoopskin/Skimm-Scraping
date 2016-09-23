@@ -3,28 +3,53 @@ from bs4 import BeautifulSoup
 #import html.parser
 import html
 #h = html.parser.HTMLParser()
+class Person(object):
+	"""docstring for Person"""
+	def __init__(self, name, location, isSkimmBassador):
+		super(Person, self).__init__()
+		#Use if debugging creation working
+		#print("Name: %s\t\t Location: %s\t\t Skimm'Bassador: %r" % (name, location, isSkimmBassador))
+		self.name = name
+		self.location = location
+		self.isSkimmBassador = isSkimmBassador
+
+personList = []
+locationDict = {}
 
 mbox = mailbox.mbox('Skimm Emails.mbox')
-#print(mbox)
-#print(mbox.iterkeys())
-#print(mbox.itervalues())
 
+#TODO: Add progress bar, especially as this gets bigger and processing time would increase.
 for item in mbox.items():
 	print("-------------")
 	msg = item[1]
 	#print(msg['Subject'])
 	if msg['Subject'].startswith("Daily Skimm"):
-		#TODO: Encoding... Not sure what's going on. Some end tags aren't properly there, so Soup is having an issue determining what's the text
-		#E.g. h3 ended with "&gt;" so soup thought loads after it was the 'text' since it hadn't 'ended' yet
-		#soup = BeautifulSoup(h.unescape(msg.as_string().replace("=2E","",10000).replace("\n","",10000).replace("&lt;","<",10000).replace("&lt;=","<",10000).replace("&gt;",">",10000)), 'html.parser')
-		soup = BeautifulSoup(html.unescape(msg.as_string().replace("=2E","",10000).replace("=","",10000).replace("\n","",10000)))
-		#print(msg.as_string())
-		topHeaders = soup.find_all('h1')
-		for header in topHeaders:
-			#This could be better...
-			text = header.get_text()
-			print(text)	
+		soup = BeautifulSoup(html.unescape(msg.as_string().replace("=2E","",10000).replace("=","",10000).replace("\n","",10000)), "html.parser")
 
-		for messyHeader in soup.find_all('h3'):
-			print(messyHeader.get_text())
-	#break
+		birthdays = soup.find_all('p')[-1].get_text()
+		birthdaysList = birthdays.split(";")
+		for person in birthdaysList:
+
+			isSkimmBassador = (person.strip()[0]=="*")
+			try:
+				name = person[:person.index("(")].strip()
+				location = person[person.index("(")+1:-1].strip()
+			except(ValueError):
+				name = person
+				location = ""
+			personList.append(Person(name, location, isSkimmBassador))
+
+#TODO: Standardize location to city, state.
+#NOTE: There are global individuals.
+for person in personList:
+	if len(person.location) == 0:
+		continue
+	else:
+		try:
+			locationDict[person.location.split(",")[-1].strip()]+=1
+		except(KeyError):
+			locationDict[person.location.split(",")[-1].strip()] = 1
+
+
+print("Found %i individuals across %i emails (weekdays):" % (len(personList), len(mbox.items())))
+print(locationDict)
