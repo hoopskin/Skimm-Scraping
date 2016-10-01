@@ -1,18 +1,20 @@
-import mailbox, html, sys, csv
+import mailbox, html, sys, csv, datetime
 from bs4 import BeautifulSoup
 
 class Person(object):
 	"""docstring for Person"""
-	def __init__(self, name, location, isSkimmBassador):
+	def __init__(self, name, location, isSkimmBassador, birthday):
 		super(Person, self).__init__()
 		#Use if debugging creation working
 		#print("Name: %s\t\t Location: %s\t\t Skimm'Bassador: %r" % (name, location, isSkimmBassador))
 		self.name = name
 		self.location = location
+		self.isSkimmBassador = isSkimmBassador
+		self.birthday = birthday
+
 		self.city = ""
 		self.state = ""
 		self.foreignAddr = None
-		self.isSkimmBassador = isSkimmBassador
 		self.detCityState()
 		self.gender = self.detGender()
 
@@ -83,6 +85,10 @@ def processEmails():
 		update_progress("Process Emails", i/emailCount)
 		i+=1
 		msg = item[1]
+		bday = msg['Received'].split("  ")[-1]
+		bday = bday.split(" ")[1:4]
+		bday = "%s %s %s"%(bday[0], bday[1], bday[2])
+		bday = datetime.datetime.strptime(bday, "%d %b %Y")
 		#print(msg['Subject'])
 		if msg['Subject'].startswith("Daily Skimm"):
 			soup = BeautifulSoup(html.unescape(msg.as_string().replace("=2E","",10000).replace("=","",10000).replace("\n","",10000)).replace("\xa0",", ", 10000), "html.parser")
@@ -99,11 +105,11 @@ def processEmails():
 				except(ValueError):
 					name = person
 					location = ""
-				personList.append(Person(name, location, isSkimmBassador))
 
+				personList.append(Person(name, location, isSkimmBassador, bday))
 
 def preProcess():
-	global locationDict, genderDict, globalSkimmbassadorCount, locationSkimmDict
+	global locationDict, genderDict, globalSkimmbassadorCount, locationSkimmDict, birthdayDict
 
 	for person in personList:
 		#Location
@@ -140,6 +146,11 @@ def preProcess():
 			if person.isSkimmBassador:
 				locationSkimmDict[person.state][0]+=1
 
+		#Birthday
+		try:
+			birthdayDict[person.birthday]+=1
+		except(KeyError):
+			birthdayDict[person.birthday] = 1
 
 def printLocations():
 	print("------Location-----")
@@ -165,6 +176,16 @@ def printSkimmbassadorRate():
 	print("%i/%i = %.2f%%" % (globalSkimmbassadorCount, len(personList), globalSkimmbassadorCount/len(personList)*100))
 	print("--End of Simmbassador Rate--")
 
+def printBirthdayRate():
+	print("------Birthdays-----")
+	keys = list(birthdayDict.keys())
+	keys.sort()
+
+	for k in keys:
+		print("%s\t%i" % (datetime.datetime.strftime(k, "%m/%d/%Y"), birthdayDict[k]))
+
+	print("--End of Birthdays--")
+
 def printLocSkimmbassadorRates():
 	print("------Skimmbassadors by State-----")
 
@@ -185,7 +206,7 @@ def printResults():
 	printGenderSplit()
 	printSkimmbassadorRate()
 	printLocSkimmbassadorRates()
-
+	printBirthdayRate()
 
 def main():
 	processEmails()
@@ -196,6 +217,7 @@ locationDict = {"Foreign":0}
 nameGenderDict = {}
 genderDict = {}
 locationSkimmDict = {"Foreign":[0,0]}
+birthdayDict = {}
 abbrevToState = {'AL': 'Alabama','AK': 'Alaska','AZ': 'Arizona','AR': 'Arkansas','CA': 'California','CO': 'Colorado','CT': 'Connecticut','DE': 'Delaware','FL': 'Florida','GA': 'Georgia','HI': 'Hawaii','ID': 'Idaho','IL': 'Illinois','IN': 'Indiana','IA': 'Iowa','KS': 'Kansas','KY': 'Kentucky','LA': 'Louisiana','ME': 'Maine','MD': 'Maryland','MA': 'Massachusetts','MI': 'Michigan','MN': 'Minnesota','MS': 'Mississippi','MO': 'Missouri','MT': 'Montana','NE': 'Nebraska','NV': 'Nevada','NH': 'New Hampshire','NJ': 'New Jersey','NM': 'New Mexico','NY': 'New York','NC': 'North Carolina','ND': 'North Dakota','OH': 'Ohio','OK': 'Oklahoma','OR': 'Oregon','PA': 'Pennsylvania','RI': 'Rhode Island','SC': 'South Carolina','SD': 'South Dakota','TN': 'Tennessee','TX': 'Texas','UT': 'Utah','VT': 'Vermont','VA': 'Virginia','WA': 'Washington','WV': 'West Virginia','WI': 'Wisconsin','WY': 'Wyoming'}
 stateToAbbrev = {'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA','Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA','Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA','Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD','Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY'}
 
