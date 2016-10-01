@@ -98,9 +98,12 @@ def processEmails():
 			for person in birthdaysList:
 				person = person.replace("\xa0"," ", 10000)
 
-				isSkimmBassador = (person.strip()[0]=="*")
+				#isSkimmBassador = (person.strip()[0]=="*")
 				try:
 					name = person[:person.index("(")].strip()
+					isSkimmBassador = name[0] == "*"
+					if isSkimmBassador:
+						name = name[1:]
 					location = person[person.index("(")+1:-1].strip()
 				except(ValueError):
 					name = person
@@ -203,14 +206,17 @@ def printResults():
 	print("Found %i individuals across %i emails (weekdays):" % (len(personList), emailCount))
 	preProcess()
 	printLocations()
-	printGenderSplit()
 	printSkimmbassadorRate()
 	printLocSkimmbassadorRates()
 	printBirthdayRate()
+	printGenderSplit()
 
 def main():
 	processEmails()
 	printResults()
+	#for p in personList:
+	#	if p.gender == "Unknown":
+	#		print(p.name.split(" ")[0])
 
 
 locationDict = {"Foreign":0}
@@ -226,5 +232,6 @@ personList = []
 emailCount = 0
 globalSkimmbassadorCount = 0
 
+print("\n"*80)
 processGenderFile()
 main()
