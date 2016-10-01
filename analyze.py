@@ -7,7 +7,7 @@ class Person(object):
 		super(Person, self).__init__()
 		#Use if debugging creation working
 		#print("Name: %s\t\t Location: %s\t\t Skimm'Bassador: %r" % (name, location, isSkimmBassador))
-		self.name = name
+		self.name = name.replace(",","",100).strip()
 		self.location = location
 		self.isSkimmBassador = isSkimmBassador
 		self.birthday = birthday
@@ -96,7 +96,16 @@ def processEmails():
 			birthdays = soup.find_all('p')[-1].get_text()
 			birthdaysList = birthdays.split(";")
 			for person in birthdaysList:
-				person = person.replace("\xa0"," ", 10000)
+				person = person.replace("\xa0"," ", 10000).strip()
+				if person[0] == ",":
+					person = person[1:].strip()
+				
+				if person.startswith("theSkimm"):
+					person = person[11:]
+				elif person.startswith("Dr "):
+					person = person[3:]
+				elif person.startswith("Skimm Mom "):
+					person = person[10:]
 
 				#isSkimmBassador = (person.strip()[0]=="*")
 				try:
@@ -216,6 +225,7 @@ def main():
 	printResults()
 	#for p in personList:
 	#	if p.gender == "Unknown":
+	#		#print(p.name)
 	#		print(p.name.split(" ")[0])
 
 
