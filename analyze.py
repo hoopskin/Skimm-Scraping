@@ -97,6 +97,11 @@ def processEmails():
 			birthdaysList = birthdays.split(";")
 			for person in birthdaysList:
 				person = person.replace("\xa0"," ", 10000).strip()
+
+				#TODO: This is messy, is there a better way?
+				if len(person) == 0:
+					continue
+
 				if person[0] == ",":
 					person = person[1:].strip()
 				
@@ -108,6 +113,7 @@ def processEmails():
 					person = person[10:]
 
 				#isSkimmBassador = (person.strip()[0]=="*")
+				isSkimmBassador = False
 				try:
 					name = person[:person.index("(")].strip()
 					isSkimmBassador = name[0] == "*"
@@ -124,15 +130,6 @@ def preProcess():
 	global locationDict, genderDict, globalSkimmbassadorCount, locationSkimmDict, birthdayDict
 
 	for person in personList:
-		#Location
-		if person.foreignAddr:
-			locationDict["Foreign"]+=1
-		else:
-			try:
-				locationDict[person.state]+=1
-			except(KeyError):
-				locationDict[person.state] = 1
-
 		#Gender
 		try:
 			genderDict[person.gender]+=1
@@ -163,22 +160,14 @@ def preProcess():
 			birthdayDict[person.birthday]+=1
 		except(KeyError):
 			birthdayDict[person.birthday] = 1
-
-def printLocations():
-	print("------Location-----")
-
-	locKeys = list(locationDict.keys())
-	locKeys.sort()
-
-	for k in locKeys:
-		print("%s\t%i" % (k, locationDict[k]))
 	
-	print("--End of Location--")
-
 def printGenderSplit():
 	print("------Gender-----")
 
-	for k in list(genderDict.keys()):
+	keys = list(genderDict.keys())
+	keys.sort()
+
+	for k in keys:
 		print("%s\t%i" % (k, genderDict[k]))
 	
 	print("--End of Gender--")
@@ -214,7 +203,6 @@ def printLocSkimmbassadorRates():
 def printResults():
 	print("Found %i individuals across %i emails (weekdays):" % (len(personList), emailCount))
 	preProcess()
-	printLocations()
 	printSkimmbassadorRate()
 	printLocSkimmbassadorRates()
 	printBirthdayRate()
@@ -223,13 +211,8 @@ def printResults():
 def main():
 	processEmails()
 	printResults()
-	#for p in personList:
-	#	if p.gender == "Unknown":
-	#		#print(p.name)
-	#		print(p.name.split(" ")[0])
 
 
-locationDict = {"Foreign":0}
 nameGenderDict = {}
 genderDict = {}
 locationSkimmDict = {"Foreign":[0,0]}
