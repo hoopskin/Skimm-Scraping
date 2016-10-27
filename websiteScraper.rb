@@ -7,12 +7,25 @@ require 'progressbar'
 
 url = "theskimm.com/archive"
 
+#NOTE: Look into what's easier for testing / publishing data. If it's a CSV, or part of a JS file?
+dataFileName = "skimmrData.csv"
+oFile = CSV.open(dataFileName, "ab")
+
 site = Net::HTTP.get(url[0..url.index("/")-1], url[url.index("/")..-1])
 
 pageObj = Nokogiri::HTML(site)
 
 links = pageObj.css("div.links").css("a")
 i = 0
+
+#TODO: Eventually this should ignore ones we've already captured
+suffixesWeAlreadyHave = []
+
+CSV.foreach(dataFileName) do |row|
+	if suffixesWeAlreadyHave.index(row[-1]).nil?
+		suffixesWeAlreadyHave.insert(suffixesWeAlreadyHave.size, row[-1])
+	end
+end
 
 suffixes = []
 while i < links.size
@@ -22,20 +35,20 @@ while i < links.size
 	suffixes.insert(suffixes.size, link.attribute('href').value)
 end
 
+suffixes = suffixes - suffixesWeAlreadyHave
+
 puts suffixes
 
-oFile = CSV.open("skimmrData.csv", "ab")
 
-#CSV.open("channelDataDump.csv", "ab") do |channelCSV|
-#	channelCSV << ["ID", "Title", "Description", "Subscriber_Count", "Published_Date"]
-#	pbar = ProgressBar.new("Channel Data", channelList.count)
-#	channelList.each do |curChannel|
-#		pbar.inc
-#		channel = getChannel(curChannel)
-#		channelCSV << [channel.id, channel.title, channel.description, channel.subscriber_count, channel.published_at]
-#	end
-#	pbar.finish
-#end
+
+genderHash = Hash.new
+CSV.foreach("nameGender.csv") do |row|
+	if genderHash[row[0]].nil?
+		genderHash[row[0]] = row[1]
+	else
+		genderHash[row[1]] = "Both"
+	end
+end
 
 i = 0
 #while i < suffixes.size
@@ -96,7 +109,12 @@ for suffix in suffixes
 			lastName = personName[personName.index(" ")+1..-1]
 		end
 
-		oFile << [isSkimmbassador.to_s, city, state, firstName, lastName, suffix]
+		gender = "Unknown"
+		if !genderHash[firstName].nil?
+			gender = genderHash[firstName]
+		end
+
+		oFile << [isSkimmbassador.to_s, city, state, firstName, lastName, gender, suffix]
 
 	end
 
